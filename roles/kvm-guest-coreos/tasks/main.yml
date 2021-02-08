@@ -1,0 +1,65 @@
+---
+# tasks file for kvm-guest-coreos
+
+#handle appamor permission issue
+- name: config apparmor
+  include_tasks:
+    file: apparmor.yml
+    apply:
+      tags: create_vms
+  tags:
+    - create_vms
+
+#make sure, that the imagefile exists
+- name: Check if the imagefile raw exists
+  stat:
+    path: "{{ image_path }}{{ coreos_image_name_raw }}"
+  register: image_stat
+  tags:
+    - create_vms
+
+- name: check image dir and fetch core os image
+  include_tasks:
+    file: fetch-coreos-image.yml
+    apply:
+      tags: create_vms
+  when: not image_stat.stat.exists
+  tags:
+    - create_vms
+
+- name: with_items_test
+  debug: msg="{{ item.name }}|{{ item.disk_size }}|{{ item.mac_adr }}"
+  with_items: "{{ [virtual_machines] }}"
+  tags:
+    - create_vms
+
+- name: register all VMs
+  community.libvirt.virt:
+    command: list_vms
+  register: all_vms
+  tags:
+    - check_vms
+    - create_vms
+
+- name: list all VMs
+  debug: msg="{{ all_vms.list_vms }}"
+  tags:
+    - check_vms
+    - create_vms
+
+- name: check if vm exists
+  debug: msg="vm={{ item.name }} exists already"
+  when: item.name in all_vms.list_vms
+  with_items: "{{ [virtual_machines] }}"
+  tags:
+    - check_vms
+
+- name: create vms
+  include_tasks:
+    file: create-vm.yml
+    apply:
+      tags: create_vms
+  when: item.name not in all_vms.list_vms
+  with_items: "{{ [virtual_machines] }}"
+  tags:
+    - create_vms

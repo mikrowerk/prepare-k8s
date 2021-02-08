@@ -1,0 +1,9 @@
+---
+- hosts: all
+
+  roles:
+    - { role: prepare-os}
+    - { role: kvm }
+    - { role: kvm-bridge-network}
+    - { role: libvirt-storage}
+

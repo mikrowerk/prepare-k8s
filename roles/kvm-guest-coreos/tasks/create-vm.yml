@@ -1,0 +1,86 @@
+# Install a fedora coreos guest on kvm with lvm blockdevice and given guest properties
+
+# list all VMs
+- name: list all VMs
+  community.libvirt.virt:
+    command: list_vms
+  register: all_vms
+
+- name: register vm properties
+  set_fact:
+    lv_name: "{{ item.name }}_{{ lv_appendix }}"
+    coreos_image_path: "{{ image_path }}{{ coreos_image_name_raw }}"
+    dev_name: "/dev/{{ vg_virt_name }}/{{ item.name }}_{{ lv_appendix }}"
+    ignition_config_path: "{{ image_path }}{{ item.name }}.ign"
+    node_type: "{{ item.type }}"
+    storage_disk_name: "/dev/{{ cluster_vg_name }}/{{ cluster_lv_name }}"
+
+- name: print infos
+  debug: msg="name={{ item.name }},lv={{ lv_name }}, cpu={{ item.cpu }}, memory={{ item.memory }}MB, disk_size={{ item.disk_size }}, mac_adr={{ item.mac_adr }}, os_variant={{ item.os_variant }}, nodeType={{ node_type }}, storageDiskName={{ storage_disk_name }}"
+
+- name: test template
+  set_fact:
+    rendered_template: "{{ lookup('template', 'config.ign.j2') }}"
+
+- debug: msg="{{ rendered_template }}"
+
+- name: Template config.ign to imagedir
+  become: true
+  template:
+    src:  "config.ign.j2"
+    dest: "{{ ignition_config_path }}"
+    owner: ansible
+    group: ansible
+    mode: '0644'
+    backup: yes
+
+- name: Create a logical volume for vm.
+  become: true
+  community.general.lvol:
+    vg: "{{ vg_virt_name }}"
+    lv: "{{ lv_name }}"
+    size: "{{ item.disk_size }}"
+  register: lv_stat
+
+- name: copy base image into LV
+  become: true
+  shell: "dd if={{ coreos_image_path }} of={{ dev_name }} bs=64K conv=noerror,sync"
+  when: lv_stat.changed
+
+# define vm with xml
+- name: test xml template
+  set_fact:
+    rendered_template: "{{ lookup('template', 'vm-domain.xml') }}"
+
+- debug: msg="{{ rendered_template }}"
+
+#define vm
+- name: define vm
+  community.libvirt.virt:
+    command: define
+    xml: "{{ lookup('template', 'vm-domain.xml') }}"
+
+# create vm and start
+- name: start vm
+  become: true
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    command: create
+    state: running
+
+- name: set autostart
+  become: true
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    autostart: true
+
+
+# Listing VMs
+- name: list all VMs
+  become: true
+  community.libvirt.virt:
+    command: list_vms
+    state: running
+  register: running_vms
+
+- debug: msg="{{ running_vms }}"

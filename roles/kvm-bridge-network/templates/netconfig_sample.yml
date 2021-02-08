@@ -1,0 +1,25 @@
+network:
+  version: 2
+  ethernets:
+    enp4s0f0:
+      dhcp4: no
+      dhcp6: no
+    enp4s0f1:
+      dhcp4: no
+      dhcp6: no
+
+  bonds:
+    bond0:
+      interfaces:
+        - enp4s0f0
+        - enp4s0f1
+      parameters:
+        lacp-rate: fast
+        mode: 802.3ad
+        transmit-hash-policy: layer2+3
+      addresses: [192.168.9.14/24]
+      gateway4: 192.168.9.3
+      nameservers:
+        addresses: [192.168.9.3, 8.8.8.8]
+
+

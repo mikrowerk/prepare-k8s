@@ -1,0 +1,32 @@
+network:
+  version: 2
+  ethernets:
+{% for iface in net_interfaces %}
+    {{ iface }}:
+      dhcp4: no
+      dhcp6: no
+{% endfor %}
+
+  bonds:
+    {{ bond_name }}:
+      interfaces:
+{% for iface in net_interfaces %}
+        - {{ iface }}
+{% endfor %}
+      parameters:
+        lacp-rate: fast
+        mode: 802.3ad
+        transmit-hash-policy: layer2+3
+
+  bridges:
+    {{ bridge_name }}:
+      interfaces:
+        - {{ bond_name }}
+      addresses: [{{ ipadr4 }}/{{ netmask }}]
+      gateway4: {{ gateway4 }}
+      nameservers:
+        addresses: {{ nameservers_adr }}
+      dhcp4: no
+      dhcp6: no
+
+

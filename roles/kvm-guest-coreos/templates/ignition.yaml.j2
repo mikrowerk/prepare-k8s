@@ -1,0 +1,25 @@
+variant: fcos
+version: 1.1.0
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDMS88MfzzADx4ZhMibQKDkYXyrYeiCU8bNSLNykr5aw2yF6cjA2W98fOoqTsPf0w7z2AR90oaVJ5Hlyj+vNKm3v3Rp2jG03yViUfPXj2z4/M/E25XyHxVBbp73Ln8+6/7kaoF3BifbziOT8eTufgVtwIcKWLPLE4H/z2aN7w/WYttjHVVmOv+geytf5vQmBPWmUzWhnBKOlgHDnmtNmoVUI/H3DIoK5NLSqeMUK7EsRJgK5rRRy+/Ogn0HYH7Ax8KLZ6nHBWJylid3ofrMRjvK3Qe1h9xwZ/7W8SD5bryGzI5YlZyW35VDEE9NTcWVxPymxiDymFpIzSWoeBAVNTgjGI0fogYxKQmOiPepXq6QO0n31va2pdmKx4CdSSjFN7hzflxQHB6VKS2WEhXKGsfJuaNpiIcQRq7ybEWN7HIah7qvnZUjYyVUNm0qZv0P7VgIdHtTOoMd+0SP+PyIbJ3VdzfI2Ven4DaJufrZl3W6yhkeHRhQt+gv0jxn9KwMmB0= core
+    - name: ansible
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDMS88MfzzADx4ZhMibQKDkYXyrYeiCU8bNSLNykr5aw2yF6cjA2W98fOoqTsPf0w7z2AR90oaVJ5Hlyj+vNKm3v3Rp2jG03yViUfPXj2z4/M/E25XyHxVBbp73Ln8+6/7kaoF3BifbziOT8eTufgVtwIcKWLPLE4H/z2aN7w/WYttjHVVmOv+geytf5vQmBPWmUzWhnBKOlgHDnmtNmoVUI/H3DIoK5NLSqeMUK7EsRJgK5rRRy+/Ogn0HYH7Ax8KLZ6nHBWJylid3ofrMRjvK3Qe1h9xwZ/7W8SD5bryGzI5YlZyW35VDEE9NTcWVxPymxiDymFpIzSWoeBAVNTgjGI0fogYxKQmOiPepXq6QO0n31va2pdmKx4CdSSjFN7hzflxQHB6VKS2WEhXKGsfJuaNpiIcQRq7ybEWN7HIah7qvnZUjYyVUNm0qZv0P7VgIdHtTOoMd+0SP+PyIbJ3VdzfI2Ven4DaJufrZl3W6yhkeHRhQt+gv0jxn9KwMmB0= ansible
+      groups:
+        - core
+        - adm
+        - sudo
+        - docker
+        - wheel
+storage:
+  files:
+    - path: "/etc/hostname"
+      user:
+        name: "root"
+      group:
+        name: "root"
+      contents:
+        inline: "{{ item.name }}"

@@ -1,0 +1,4 @@
+---
+# vars file for kvm
+kvm_ok : ""
+ansible_user: "ansible"

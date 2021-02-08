@@ -1,0 +1,69 @@
+{
+  "ignition": {
+    "version": "3.1.0"
+  },
+  "passwd": {
+    "users": [
+      {
+        "name": "core",
+        "sshAuthorizedKeys": [
+            "{{ core_pub_key }}"
+        ]
+      },
+      {
+        "name": "ansible",
+        "groups": [
+            "core",
+            "adm",
+            "sudo",
+            "docker",
+            "wheel"
+        ],
+        "sshAuthorizedKeys": [
+            "{{ ansible_pub_key }}"
+        ]
+      },
+      {
+        "name": "clusteradmin",
+        "groups": [
+            "core",
+            "adm",
+            "sudo",
+            "docker",
+            "wheel"
+        ],
+        "sshAuthorizedKeys": [
+            "{{ ansible_pub_key }}"
+        ]
+      }
+    ]
+  },
+  "storage": {
+    "files": [
+      {
+        "group": {
+          "name": "root"
+        },
+        "user": {
+          "name": "root"
+        },
+        "path": "/etc/hostname",
+        "contents": {
+          "source": "data:,{{ item.hostname }}"
+        }
+      },
+      {
+        "group": {
+          "name": "root"
+        },
+        "user": {
+          "name": "root"
+        },
+        "path": "/etc/sysctl.d/reverse-path-filter.conf",
+        "contents": {
+          "source": "data:,net.ipv4.conf.all.rp_filter%3D1"
+        }
+      }
+    ]
+  }
+}

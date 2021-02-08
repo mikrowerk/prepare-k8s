@@ -1,0 +1,91 @@
+---
+
+- name:  Create a new partition for LVM
+  become: true
+  parted:
+    device: "{{ lvm_blockdevice }}"
+    number: "{{ lvm_part_number }}"
+    flags: [ lvm ]
+    state: present
+    part_end: "{{ lvm_part_end }}"
+
+# Read device information (always use unit when probing)
+- name: list partion info with parted
+  become: true
+  parted: device="{{ lvm_blockdevice }}" unit=GiB
+  register: part_info
+
+- debug: msg={{ part_info }}
+
+- name: Create a volume group on top of /dev/sdxy with physical extent size
+  become: true
+  lvg:
+    vg: "{{ vg_virt_name }}"
+    pvs: "{{ lvm_blockdevice }}{{ lvm_part_number }}"
+    pesize: "{{ vg_pesize | int}}"
+    state: present
+
+- name: list volume groups
+  become: true
+  shell: vgdisplay
+  register: vgs
+
+- debug: msg={{ vgs.stdout }}
+
+#create storagepool for libvirt
+- debug: msg="{{ lookup('template', 'storage-pool.j2') }}"
+
+- name: define storage-pool for libvirt
+  become: true
+  virt_pool:
+    command: define
+    name: "{{ vg_virt_name }}"
+    xml: "{{ lookup('template', 'storage-pool.j2') }}"
+    state: present
+
+- name: output storage-pool facts
+  become: true
+  virt_pool:
+    command: facts
+    name: "{{ vg_virt_name }}"
+
+- debug: msg="{{ ansible_libvirt_pools[vg_virt_name]['state'] }}"
+
+- name: discover active state
+  set_fact:
+    state_var: "{{ ansible_libvirt_pools[vg_virt_name]['state'] }}"
+
+- debug: msg="{{ state_var }}"
+
+- name: create storage-pool for libvirt
+  become: true
+  virt_pool:
+    command: create
+    name: "{{ vg_virt_name }}"
+  when: state_var is search("inactive")
+
+- name: activate storage-pool for libvirt
+  become: true
+  virt_pool:
+    name: "{{ vg_virt_name }}"
+    state: active
+  when: state_var is search("inactive")
+
+- name: autostart storage-pool for libvirt
+  become: true
+  virt_pool:
+    name: "{{ vg_virt_name }}"
+    autostart: yes
+
+- name: list pools
+  become: true
+  virt_pool:
+    command: list_pools
+
+- name: output storage-pool facts
+  become: true
+  virt_pool:
+    command: facts
+    name: "{{ vg_virt_name }}"
+
+- debug: msg="{{ ansible_libvirt_pools }}"

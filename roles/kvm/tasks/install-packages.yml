@@ -1,0 +1,41 @@
+---
+
+- name: install-cpu-checker
+  become: true
+  package:
+    name: cpu-checker
+    state: latest
+
+- name: check-kvm-ok
+  shell: kvm-ok
+  register: kvmout
+
+- debug: msg={{ kvmout.stdout }}
+
+- name: hw_virtualization_check | idenitfy hw virtualization support
+  set_fact:
+    kvm_ok: true
+  when: kvmout.stdout is search("/dev/kvm")
+
+- debug: var=kvm_ok
+
+- debug: msg="can install kvm"
+  when: kvm_ok|bool
+
+- name: exit-kvm-install
+  debug: msg="can't install kvn exit now"
+  when: not kvm_ok|bool
+
+- name: install-kvm-packages
+  become: true
+  package:
+    name:
+      - bridge-utils
+      - libvirt-daemon
+      - qemu
+      - qemu-kvm
+      - virt-manager
+      - virtinst
+      - virt-top
+    state: latest
+  when: kvm_ok|bool

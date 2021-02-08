@@ -1,0 +1,23 @@
+network:
+  ethernets:
+    {{ net_interface }}:
+      dhcp4: no
+      dhcp6: no
+  version: 2
+
+  bridges:
+    {{ bridge_name }}:
+      interfaces:
+        - {{ net_interface }}
+      addresses:
+        - {{ ipadr4 }}/{{ netmask }}
+      gateway4: {{ gateway4 }}
+      nameservers:
+        addresses: {{ nameservers_adr }}
+      parameters:
+        stp: true
+        forward-delay: 4
+      mtu: 1500
+      dhcp4: no
+      dhcp6: no
+

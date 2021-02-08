@@ -1,0 +1,34 @@
+---
+
+- name: install-lxml
+  become: true
+  package:
+    name:
+      - python3-lxml
+    state: present
+  tags:
+    - libvirt_storage
+
+# tasks file for libvirt-storage
+- name: list-disks
+  become: true
+  shell: lsblk "{{ lvm_blockdevice }}"
+  register: blkdevice
+  tags:
+    - libvirt_storage
+
+- debug: msg={{ blkdevice.stdout }}
+  tags:
+    - libvirt_storage
+
+- name: create libvirt-storage-pool
+  include: libvirt-storage-pool.yml
+  tags:
+    - libvirt_storage
+
+#- name: create cluster-storage
+#  include: cluster-storage-lv.yml
+#  when: create_cluster_storage is defined and create_cluster_storage == True
+#  tags:
+#    - cluster_storage
+

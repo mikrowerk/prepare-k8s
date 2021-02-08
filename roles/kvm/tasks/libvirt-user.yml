@@ -1,0 +1,16 @@
+---
+- name: ensure libvirt group exists
+  become: true
+  group:
+    name: libvirt
+    state: present
+  tags:
+    - kvm
+- name: add '{{ ansible_user }}' to libvirt group
+  become: true
+  user:
+    name: "{{ ansible_user }}"
+    groups: "{{ ansible_groups }}"
+    append: yes
+  tags:
+    - kvm

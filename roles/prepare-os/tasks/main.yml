@@ -1,0 +1,19 @@
+---
+# tasks file for prepare-os
+
+- name: install-packages
+  become: true
+  package:
+    name:
+      - python3-lxml
+      - cpu-checker
+    state: present
+  tags:
+    - prepare_os
+# Set the hostname
+- name: Set a hostname
+  become: true
+  hostname:
+    name: "{{ hostname }}"
+  tags:
+    - prepare_os

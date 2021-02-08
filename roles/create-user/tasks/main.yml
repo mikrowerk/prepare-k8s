@@ -1,0 +1,33 @@
+---
+# tasks file for create-user
+- name: "print username and keyfile"
+  debug: msg="username, {{ item.username }}, {{ lookup('file', ssh_key_directory+ item.username + '_rsa.pub') }}"
+  with_items: "{{ users }}"
+  tags:
+    - create_users
+
+- name: "Create user accounts"
+  become: true
+  user:
+    name: "{{ item.username }}"
+    groups: "{{ item.groups }}"
+  with_items: "{{ users }}"
+  tags:
+    - create_users
+- name: "Allow admin users to sudo without a password"
+  become: true
+  lineinfile:
+    dest: "/etc/sudoers" # path: in version 2.3
+    state: "present"
+    regexp: "^%clusteradmin"
+    line: "%clusteradmin ALL=(ALL) NOPASSWD: ALL"
+  tags:
+    - create_users
+- name: "Add authorized keys"
+  become: true
+  authorized_key:
+    user: "{{ item.username }}"
+    key: "{{ lookup('file', ssh_key_directory+ item.username + '_rsa.pub') }}"
+  with_items: "{{ users }}"
+  tags:
+    - create_users

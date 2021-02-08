@@ -1,0 +1,10 @@
+---
+# tasks file for kvm
+- name: install-kvm
+  include: install-packages.yml
+  tags:
+    - kvm
+- name: libvirt-user
+  include: libvirt-user.yml
+  tags:
+    - kvm

@@ -1,0 +1,49 @@
+---
+
+- name:  Create a new partition for LVM
+  become: true
+  parted:
+    device: "{{ item.lvm_blockdevice }}"
+    number: "{{ item.lvm_part_number }}"
+    flags: [ lvm ]
+    state: present
+    part_end: "{{ item.lvm_part_end }}"
+  with_items: "{{ [cluster_blockdevices] }}"
+
+- name: Create a volume group on top of pvs with physical extent size
+  become: true
+  lvg:
+    vg: "{{ cluster_vg_name }}"
+    pvs: "{{ cluster_vg_pvs_list }}"
+    pesize: "{{ cluster_vg_pesize | int}}"
+    state: present
+
+- name: list volume groups
+  become: true
+  shell: vgdisplay
+  register: vgs
+
+- debug: msg={{ vgs.stdout }}
+
+- name: list volumes
+  become: true
+  shell: lvdisplay
+  register: lvd
+
+- debug: msg={{ lvd.stdout }}
+
+- name: Create a logical volume for cluster storage.
+  become: true
+  community.general.lvol:
+    vg: "{{ cluster_vg_name }}"
+    lv: "{{ cluster_lv_name }}"
+    size: "{{ cluster_lv_size }}"
+    state: present
+  register: lv_stat
+
+- name: list volumes
+  become: true
+  shell: lvdisplay
+  register: lvd
+
+- debug: msg={{ lvd.stdout }}

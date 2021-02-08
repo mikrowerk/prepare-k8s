@@ -1,0 +1,6 @@
+---
+# tasks file for ping-hosts
+- name: ping the host
+  ping:
+  tags:
+    - ping

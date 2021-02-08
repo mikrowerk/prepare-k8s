@@ -1,0 +1,53 @@
+#image directory present
+- name: Creates directory
+  file:
+    path: "{{ image_path }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0775
+
+
+- name: Check that the compressed imagefile  exists
+  stat:
+    path: "{{ image_path }}{{ coreos_image_name_compr }}"
+  register: image_stat
+
+
+- debug: msg="{{ image_stat.stat}}"
+
+
+#fetch the core os image, if not present
+- name: fetch the core os image
+  get_url:
+    url: "{{ coreos_image_url }}{{ coreos_image_name_compr }}"
+    dest: "{{ image_path }}{{ coreos_image_name_compr }}"
+  when: not image_stat.stat.exists
+
+
+- name: Check that the imagefile  exists
+  stat:
+    path: "{{ image_path }}{{ coreos_image_name }}"
+  register: image_stat
+
+
+- debug: msg="{{ image_stat.stat}}"
+
+- name: uncompress imagefile, if not exists
+  shell: |
+    cd {{ image_path }}
+    xz -d -k {{ coreos_image_name_compr }}
+  when: not image_stat.stat.exists
+
+- name: Check that the imagefile raw exists
+  stat:
+    path: "{{ image_path }}{{ coreos_image_name_raw }}"
+  register: image_stat
+
+- debug: msg="{{ image_stat.stat}}"
+
+- name: concert imagefile, if not exists
+  shell: |
+    cd {{ image_path }}
+    qemu-img convert -f qcow2 -O raw {{ coreos_image_name }} {{ coreos_image_name_raw }}
+  when: not image_stat.stat.exists

@@ -1,0 +1,65 @@
+<domain type="kvm">
+    <name>{{ item.name }}</name>
+    <metadata>
+        <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+            <libosinfo:os id="http://fedoraproject.org/fedora/30"/>
+        </libosinfo:libosinfo>
+    </metadata>
+    <memory>{{ (item.memory|int * 1024) }}</memory>
+    <currentMemory>{{ (item.memory|int * 1024)|int }}</currentMemory>
+    <vcpu>{{ item.cpu|int }}</vcpu>
+    <os>
+        <type arch="x86_64" machine="q35">hvm</type>
+        <boot dev="hd"/>
+    </os>
+    <features>
+        <acpi/>
+        <apic/>
+    </features>
+    <cpu mode="host-model"/>
+    <clock offset="utc">
+        <timer name="rtc" tickpolicy="catchup"/>
+        <timer name="pit" tickpolicy="delay"/>
+        <timer name="hpet" present="no"/>
+    </clock>
+    <pm>
+        <suspend-to-mem enabled="no"/>
+        <suspend-to-disk enabled="no"/>
+    </pm>
+    <devices>
+        <emulator>/usr/bin/qemu-system-x86_64</emulator>
+        <disk type="block" device="disk">
+            <driver name="qemu" type="raw" cache="none" io="native"/>
+            <source dev="{{ dev_name }}"/>
+            <target dev="vda" bus="virtio"/>
+        </disk>
+        {% if ( node_type is defined ) and ( node_type == 'storage' ) %}
+        <disk type="block" device="disk">
+            <driver name="qemu" type="raw" cache="none" io="native"/>
+            <source dev="{{ storage_disk_name }}"/>
+            <target dev="vdb" bus="virtio"/>
+        </disk>
+        {% endif %}
+        <controller type="usb" index="0" model="qemu-xhci" ports="15"/>
+        <interface type="network">
+            <source network="{{ vir_network_name }}"/>
+            <mac address="{{ item.mac_adr }}"/>
+            <model type="virtio"/>
+        </interface>
+        <console type="pty">
+            <target type="virtio"/>
+        </console>
+        <channel type="unix">
+            <source mode="bind"/>
+            <target type="virtio" name="org.qemu.guest_agent.0"/>
+        </channel>
+        <memballoon model="virtio"/>
+        <rng model="virtio">
+            <backend model="random">/dev/urandom</backend>
+        </rng>
+    </devices>
+    <qemu:commandline xmlns:qemu="http://libvirt.org/schemas/domain/qemu/1.0">
+        <qemu:arg value="-fw_cfg"/>
+        <qemu:arg value="name=opt/com.coreos/config,file={{ ignition_config_path }}"/>
+    </qemu:commandline>
+</domain>

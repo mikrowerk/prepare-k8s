@@ -1,0 +1,74 @@
+---
+# tasks file for kvm-bridge-network
+#- name: test template
+#  set_fact:
+#    rendered_template: "{{ lookup('template', 'netplan-template.j2') }}"
+#
+#- debug: msg="{{ rendered_template }}"
+
+- name: Template netplan  to /etc/netplan
+  become: true
+  template:
+    src: ../templates/netplan-template.j2
+    dest: /etc/netplan/00-installer-config.yaml
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  tags:
+    - network
+    - host_network
+    - netplan
+
+- name: apply new netplan
+  become: true
+  shell: netplan apply
+  tags:
+    - network
+    - host_network
+
+- name: define virt_net
+  become: true
+  virt_net:
+    command: define
+    name: virbridge
+    xml: '{{ lookup("template", "virtnet-template.xml.j2") }}'
+  tags:
+    - network
+    - virt_network
+
+- name: create virt_net
+  become: true
+  virt_net:
+    command: create
+    name: virbridge
+  tags:
+    - network
+    - virt_network
+
+- name: list_nets
+  become: true
+  virt_net:
+    command: list_nets
+    name: virbridge
+  tags:
+    - network
+    - virt_network
+
+- name: active
+  become: true
+  virt_net:
+    state: active
+    name: virbridge
+  tags:
+    - network
+    - virt_network
+
+- name: autostart
+  become: true
+  virt_net:
+    autostart: yes
+    name: virbridge
+  tags:
+    - network
+    - virt_network

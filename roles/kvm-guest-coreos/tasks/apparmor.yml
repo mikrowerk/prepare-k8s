@@ -1,0 +1,9 @@
+#handle appamor permission issue
+- name: allow acces to /home/ansible/images/**.*
+  become: true
+  lineinfile:
+    path: "{{ apparmor_path }}"
+    state: present
+    insertafter: '#include <abstractions\/libvirt-qemu>'
+    line: '  {{ image_path }}**.* rk,'
+    backup: true
