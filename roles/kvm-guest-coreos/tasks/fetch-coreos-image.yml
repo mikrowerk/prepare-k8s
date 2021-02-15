@@ -46,7 +46,7 @@
 
 - debug: msg="{{ image_stat.stat}}"
 
-- name: concert imagefile, if not exists
+- name: convert imagefile, if not exists
   shell: |
     cd {{ image_path }}
     qemu-img convert -f qcow2 -O raw {{ coreos_image_name }} {{ coreos_image_name_raw }}

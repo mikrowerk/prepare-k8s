@@ -1,0 +1,65 @@
+<domain type="kvm">
+    <name>{{ item.name }}</name>
+    <memory>{{ (item.memory|int * 1024) }}</memory>
+    <currentMemory>{{ (item.memory|int * 1024)|int }}</currentMemory>
+    <vcpu>{{ item.cpu|int }}</vcpu>
+    <os>
+        <type arch="x86_64" machine="q35">hvm</type>
+        <boot dev="hd"/>
+    </os>
+    <features>
+        <acpi/>
+        <apic/>
+    </features>
+    <cpu mode="host-model"/>
+    <clock offset="utc">
+        <timer name="rtc" tickpolicy="catchup"/>
+        <timer name="pit" tickpolicy="delay"/>
+        <timer name="hpet" present="no"/>
+    </clock>
+    <pm>
+        <suspend-to-mem enabled="no"/>
+        <suspend-to-disk enabled="no"/>
+    </pm>
+    <devices>
+        <emulator>/usr/bin/qemu-system-x86_64</emulator>
+
+        <disk type='file' device='cdrom'>
+            <driver name='qemu' type='raw'/>
+            <source file="{{ cloud_init_iso_image_path }}" index='2'/>
+            <backingStore/>
+            <target dev="{{ cdrom_disk }}" bus='sata'/>
+            <readonly/>
+            <alias name='sata0-0-0'/>
+            <address type='drive' controller='0' bus='0' target='0' unit='0'/>
+        </disk>
+
+        <disk type="block" device="disk">
+            <driver name="qemu" type="raw" cache="none" io="native"/>
+            <source dev="{{ system_dev_name }}"/>
+            <target dev="{{ system_disk }}" bus="virtio"/>
+        </disk>
+        <disk type="block" device="disk">
+            <driver name="qemu" type="raw" cache="none" io="native"/>
+            <source dev="{{ data_dev_name }}"/>
+            <target dev="{{ data_disk }}" bus="virtio"/>
+        </disk>
+        <controller type="usb" index="0" model="qemu-xhci" ports="15"/>
+        <interface type="network">
+            <source network="{{ vir_network_name }}"/>
+            <mac address="{{ item.mac_adr }}"/>
+            <model type="virtio"/>
+        </interface>
+        <console type="pty">
+            <target type="virtio"/>
+        </console>
+        <channel type="unix">
+            <source mode="bind"/>
+            <target type="virtio" name="org.qemu.guest_agent.0"/>
+        </channel>
+        <memballoon model="virtio"/>
+        <rng model="virtio">
+            <backend model="random">/dev/urandom</backend>
+        </rng>
+    </devices>
+</domain>

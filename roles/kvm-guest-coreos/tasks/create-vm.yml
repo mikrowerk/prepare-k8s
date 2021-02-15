@@ -29,8 +29,8 @@
   template:
     src:  "config.ign.j2"
     dest: "{{ ignition_config_path }}"
-    owner: ansible
-    group: ansible
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: '0644'
     backup: yes
 
@@ -56,9 +56,16 @@
 
 #define vm
 - name: define vm
+  become: true
   community.libvirt.virt:
     command: define
     xml: "{{ lookup('template', 'vm-domain.xml') }}"
+
+- name: set autostart
+  become: true
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    autostart: true
 
 # create vm and start
 - name: start vm
@@ -67,13 +74,6 @@
     name: "{{ item.name }}"
     command: create
     state: running
-
-- name: set autostart
-  become: true
-  community.libvirt.virt:
-    name: "{{ item.name }}"
-    autostart: true
-
 
 # Listing VMs
 - name: list all VMs

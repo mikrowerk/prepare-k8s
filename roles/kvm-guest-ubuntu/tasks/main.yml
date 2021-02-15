@@ -1,0 +1,38 @@
+
+- name: make sure that des ubuntu image does exist
+  include_tasks:
+    file: fetch-ubuntu-image.yml
+    apply:
+      tags: create_ubuntu_vms
+  tags:
+    - create_ubuntu_vms
+
+- name: register all VMs
+  community.libvirt.virt:
+    command: list_vms
+  register: all_vms
+  tags:
+    - create_ubuntu_vms
+
+- name: list all VMs
+  debug: msg="{{ all_vms.list_vms }}"
+  tags:
+    - create_ubuntu_vms
+
+- name: check if vm exists
+  debug: msg="vm={{ item.name }} exists already"
+  when: item.name in all_vms.list_vms
+  with_items: "{{ [database_machines] }}"
+  tags:
+    - create_ubuntu_vms
+
+- name: create vms
+  include_tasks:
+    file: create-vm.yml
+    apply:
+      tags: create_ubuntu_vms
+  when: item.name not in all_vms.list_vms
+  with_items: "{{ [database_machines] }}"
+  tags:
+    - create_ubuntu_vms
+

@@ -1,0 +1,65 @@
+#cloud-config
+hostname: "{{ item.hostname }}"
+fqdn: "{{ item.hostname }}.local"
+manage_etc_hosts: true
+users:
+  - name: clusteradmin
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin, sudo
+    home: /home/clusteradmin
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "{{ clusteradmin_pub_key }}"
+
+  - name: ansible
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin, sudo
+    home: /home/ansible
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "{{ ansible_pub_key }}"
+
+ssh_pwauth: false
+disable_root: false
+
+packages:
+  - qemu-guest-agent
+
+growpart:
+  mode: auto
+  devices: ['/']
+disk_setup:
+  /dev/vdb:
+    table_type: gpt
+    layout: True
+    overwrite: False
+fs_setup:
+  - label: DATA
+    filesystem: ext4
+    device: '/dev/vdb'
+    partition: auto
+    #cmd: mkfs -t %(filesystem)s -L %(label)s %(device)s
+mounts:
+  # [ /dev/vdx, /mountpoint, fstype ]
+  - [ LABEL=DATA, /data, ext4 ]
+
+# 3rd col=fs type, 4th col=permissions, 5th=backup enabled, 6th=fsck order
+mount_default_fields: [ None, None, "ext4", "defaults,noatime","0","2"]
+
+# every boot
+bootcmd:
+  - [ sh, -c, 'echo ran cloud-init again at $(date) | sudo tee -a /root/bootcmd.log' ]
+
+# run once for setup
+# update-grub
+# disable cloud-init for the next runs
+runcmd:
+  - [ sh, -c, 'update-grub' ]
+  - [ touch, '/etc/cloud/cloud-init.disabled']
+
+# reboot so grub config takes affect
+power_state:
+  mode: reboot
+
+# written to /var/log/cloud-init-output.log
+final_message: "The system is finally up, after $UPTIME seconds"

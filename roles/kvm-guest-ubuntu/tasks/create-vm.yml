@@ -1,0 +1,144 @@
+- name: register vm properties
+  set_fact:
+    cloud_init_user_data_path: "{{ image_path }}{{ item.name }}/user-data"
+    cloud_init_meta_data_path: "{{ image_path }}{{ item.name }}/meta-data"
+    cloud_init_iso_image_path: "{{ image_path }}{{ item.name }}/cidata.iso"
+    ubuntu_raw_image_path: "{{ image_path }}{{ ubuntu_image_name_raw }}"
+    lv_name: "{{ item.name }}_{{ lv_appendix }}"
+    system_dev_name: "/dev/{{ vg_virt_name }}/{{ item.name }}_{{ lv_appendix }}"
+    data_lv_name: "{{ item.name }}_{{ data_volume_appendix }}"
+    data_dev_name: "/dev/{{ vg_virt_name }}/{{ item.name }}_{{ data_volume_appendix }}"
+    system_disk: "vda"
+    data_disk: "vdb"
+    cdrom_disk: "sda"
+
+- name: print infos
+  debug: msg="name={{ item.name }},lv={{ lv_name }}, cpu={{ item.cpu }}, memory={{ item.memory }}MB, disk_size={{ item.disk_size }}, mac_adr={{ item.mac_adr }}, os_variant={{ item.os_variant }}, nodeType={{ item.type }}, dataDiskName={{ data_dev_name }}"
+
+- name: test template
+  set_fact:
+    rendered_template: "{{ lookup('template', 'user-data.j2') }}"
+
+- debug: msg="{{ rendered_template }}"
+
+- name: Creates directory
+  file:
+    path: "{{ image_path }}{{ item.name }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0775
+
+- name: Template user-data to imagedir
+  become: true
+  template:
+    src:  "user-data.j2"
+    dest: "{{ cloud_init_user_data_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+    backup: yes
+
+- name: Template meta-data to imagedir
+  become: true
+  template:
+    src:  "meta-data.j2"
+    dest: "{{ cloud_init_meta_data_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+    backup: yes
+
+- name: check packages needed
+  become: true
+  package:
+    name:
+      - qemu-utils
+      - genisoimage
+      - cloud-image-utils
+    state: latest
+
+- name: create boot cd
+  become: true
+  shell: "cloud-localds -v {{ cloud_init_iso_image_path }} {{ cloud_init_user_data_path }} {{ cloud_init_meta_data_path }}"
+  register: output
+
+- name: Create a logical volume for vm sys disk.
+  become: true
+  community.general.lvol:
+    vg: "{{ vg_virt_name }}"
+    lv: "{{ lv_name }}"
+    size: "{{ item.disk_size }}"
+  register: lv_stat
+
+- debug: msg="{{ lv_stat }}"
+
+- name: copy base image into LV
+  become: true
+  shell: "dd if='{{ ubuntu_raw_image_path }}' of='{{ system_dev_name }}' bs=64K conv=noerror,sync"
+#  when: lv_stat.changed
+
+- name: Create a logical volume for vm data disk.
+  become: true
+  community.general.lvol:
+    vg: "{{ vg_virt_name }}"
+    lv: "{{ data_lv_name }}"
+    size: "{{ item.db_disk_size }}"
+  register: lv_stat
+
+- debug: msg="{{ lv_stat }}"
+
+# define vm with xml
+- name: test xml template
+  set_fact:
+    rendered_template: "{{ lookup('template', 'vm-domain.xml') }}"
+
+- debug: msg="{{ rendered_template }}"
+
+- name: Template vm.xml to imagedir
+  become: true
+  template:
+    src:  "vm-domain.xml"
+    dest: "{{ image_path }}{{ item.name }}/vm-domain.xml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+    backup: yes
+
+#define vm
+- name: define vm
+  become: true
+  community.libvirt.virt:
+    command: define
+    xml: "{{ lookup('template', 'vm-domain.xml') }}"
+
+- name: set autostart
+  become: true
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    autostart: true
+
+# create vm and start
+- name: start vm
+  become: true
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    command: create
+    state: running
+
+# Listing VMs
+- name: list all VMs
+  become: true
+  community.libvirt.virt:
+    command: list_vms
+    state: running
+  register: running_vms
+#
+- debug: msg="{{ running_vms }}"
+
+# Check if vm is up
+
+# eject media
+# virsh change-media gdserver01-vm07-l-db-01 sda --eject
+
+# reboot

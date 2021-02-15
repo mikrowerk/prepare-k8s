@@ -1,0 +1,48 @@
+#image directory present
+- name: Creates directory
+  file:
+    path: "{{ image_path }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0775
+
+
+- name: Check that the downloaded imagefile  exists
+  stat:
+    path: "{{ image_path }}{{ ubuntu_image_name_raw }}"
+  register: image_stat
+
+- debug: msg="{{ image_stat.stat}}"
+
+#fetch the core os image, if not present
+- name: fetch the ubuntu image
+  get_url:
+    url: "{{ ubuntu_image_url }}"
+    dest: "{{ image_path }}{{ ubuntu_image_name }}"
+  when: not image_stat.stat.exists
+
+- name: list image info
+  shell: "qemu-img info {{ image_path }}{{ ubuntu_image_name }}"
+  register: output
+
+- name: output image info
+  debug: msg=output.stdout_lines
+
+- name: Check that the raw  exists
+  stat:
+    path: "{{ image_path }}{{ ubuntu_image_name_raw}}"
+  register: raw_image_stat
+
+- name: convert imagefile, if not exists or new image was downloaded
+  shell: |
+    cd {{ image_path }}
+    qemu-img convert -f qcow2 -O raw {{ ubuntu_image_name }} {{ ubuntu_image_name_raw }}
+  when: not image_stat.stat.exists or not raw_image_stat.stat.exists
+
+- name: list image directory
+  shell: "ls -al {{ image_path }}"
+  register: output
+
+- name: output image directory listing
+  debug: msg=output.stdout_lines
