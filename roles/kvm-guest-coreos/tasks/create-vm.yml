@@ -11,9 +11,19 @@
     lv_name: "{{ item.name }}_{{ lv_appendix }}"
     coreos_image_path: "{{ image_path }}{{ coreos_image_name_raw }}"
     dev_name: "/dev/{{ vg_virt_name }}/{{ item.name }}_{{ lv_appendix }}"
-    ignition_config_path: "{{ image_path }}{{ item.name }}.ign"
+    ignition_config_path: "{{ image_path }}{{ item.name }}/configuration.ign"
+    vm_xml_config_path: "{{ image_path }}{{ item.name }}/vm-domain.xml"
     node_type: "{{ item.type }}"
-    storage_disk_name: "/dev/{{ cluster_vg_name }}/{{ cluster_lv_name }}"
+    storage_disk_name: "{{ item.storage_disk_name }}"
+    mount_path: "{{ storage_mount_path }}"
+
+- name: Creates directory
+  file:
+    path: "{{ image_path }}{{ item.name }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0775
 
 - name: print infos
   debug: msg="name={{ item.name }},lv={{ lv_name }}, cpu={{ item.cpu }}, memory={{ item.memory }}MB, disk_size={{ item.disk_size }}, mac_adr={{ item.mac_adr }}, os_variant={{ item.os_variant }}, nodeType={{ node_type }}, storageDiskName={{ storage_disk_name }}"
@@ -45,7 +55,7 @@
 - name: copy base image into LV
   become: true
   shell: "dd if={{ coreos_image_path }} of={{ dev_name }} bs=64K conv=noerror,sync"
-  when: lv_stat.changed
+#  when: lv_stat.changed
 
 # define vm with xml
 - name: test xml template
@@ -53,6 +63,15 @@
     rendered_template: "{{ lookup('template', 'vm-domain.xml') }}"
 
 - debug: msg="{{ rendered_template }}"
+
+- name: Template vm.xml to imagedir
+  template:
+    src:  "vm-domain.xml"
+    dest: "{{ vm_xml_config_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+    backup: yes
 
 #define vm
 - name: define vm

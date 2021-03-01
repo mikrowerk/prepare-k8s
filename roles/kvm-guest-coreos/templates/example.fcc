@@ -1,0 +1,20 @@
+variant: fcos
+version: 1.2.0
+storage:
+  disks:
+    - device: "/dev/disk/by-path/virtio-pci-0000:05:00.0"
+      wipe_table: true
+      partitions:
+        - label: data1
+          number: 1
+          wipe_partition_entry: true
+  filesystems:
+    - path: /var/data1
+      device: /dev/disk/by-partlabel/data1
+      format: ext4
+      with_mount_unit: true
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: "data:,{{ item.hostname }}"
