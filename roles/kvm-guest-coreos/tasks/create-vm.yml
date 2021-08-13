@@ -14,8 +14,14 @@
     ignition_config_path: "{{ image_path }}{{ item.name }}/configuration.ign"
     vm_xml_config_path: "{{ image_path }}{{ item.name }}/vm-domain.xml"
     node_type: "{{ item.type }}"
+    storage_disk_name: "-"
+    mount_path: "-"
+
+- name: register storage properties
+  set_fact:
     storage_disk_name: "{{ item.storage_disk_name }}"
-    mount_path: "{{ storage_mount_path }}"
+    mount_path: "{{ item.storage_mount_path }}"
+  when: item.type is search("storage")
 
 - name: Creates directory
   file:
@@ -26,7 +32,7 @@
     mode: 0775
 
 - name: print infos
-  debug: msg="name={{ item.name }},lv={{ lv_name }}, cpu={{ item.cpu }}, memory={{ item.memory }}MB, disk_size={{ item.disk_size }}, mac_adr={{ item.mac_adr }}, os_variant={{ item.os_variant }}, nodeType={{ node_type }}, storageDiskName={{ storage_disk_name }}"
+  debug: msg="name={{ item.name }},lv={{ lv_name }}, cpu={{ item.cpu }}, memory={{ item.memory }}MB, disk_size={{ item.disk_size }}, mac_adr={{ item.mac_adr }}, os_variant={{ item.os_variant }}, nodeType={{ node_type }}"
 
 - name: test template
   set_fact:

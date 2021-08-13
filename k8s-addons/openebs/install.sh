@@ -1,0 +1,1 @@
+helm install -f <your-path-to>>openebs-values.yaml --namespace openebs openebs .
